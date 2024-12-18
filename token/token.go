@@ -38,6 +38,8 @@ const (
 	COMMA     = ","
 	SEMICOLON = ";"
 
+	//groupings
+	QUOTES = "\""
 	LPAREN = "("
 	RPAREN = ")"
 	LBRACE = "{"

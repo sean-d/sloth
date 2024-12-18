@@ -12,10 +12,13 @@ type Lexer struct {
 }
 
 // New returns a pointer to a Lexer that is instantiated with the possible inputs
+// The new Lexer has an input with the rest being 0.
+// readChar() is called to have ch represent the first char in the Lexer.
 func New(input string) *Lexer {
 	l := &Lexer{input: input}
 	l.readChar()
 	return l
+
 }
 
 // readChar provides the next character and advances the position in the input string.
@@ -82,6 +85,8 @@ func (l *Lexer) NextToken() token.Token {
 		} else {
 			tok = newToken(token.ASSIGN, l.ch)
 		}
+	case '"':
+		tok = newToken(token.QUOTES, l.ch)
 	case '+':
 		tok = newToken(token.PLUS, l.ch)
 	case '-':
