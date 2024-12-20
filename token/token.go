@@ -22,7 +22,7 @@ const (
 
 	//identifiers + literals
 	IDENT = "IDENT" //add, someName, x, y...
-	INT   = "INT"   // 12345
+	INT   = "INT"   // 0123456789
 
 	//operators
 	ASSIGN   = "="

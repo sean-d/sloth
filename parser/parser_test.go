@@ -8,14 +8,15 @@ import (
 
 func TestLetStatements(t *testing.T) {
 	input := `
-   let x = 5;
-   let y = 10;
-   let foobar = 838383;
+   let x 5;
+   let = 10;
+   let 12345;
    `
 	lex := lexer.New(input)
 	parse := New(lex)
 
 	program := parse.ParseProgram()
+	checkParseErrors(t, parse)
 	if program == nil {
 		t.Fatalf("ParseProgram() returned nil")
 	}
@@ -62,4 +63,20 @@ func helperTestLetStatement(t *testing.T, stmt ast.Statement, name string) bool 
 	}
 
 	return true
+}
+
+// checkParserErrors checks the parser for errors and if it has any it prints them as test errors and stops the execution of the current test.
+func checkParseErrors(t *testing.T, p *Parser) {
+	errors := p.Errors()
+
+	if len(errors) == 0 {
+		return
+	}
+
+	t.Errorf("parser has %d errors", len(errors))
+
+	for _, message := range errors {
+		t.Errorf("parser error: %q", message)
+	}
+	t.FailNow()
 }

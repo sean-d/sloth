@@ -1,14 +1,16 @@
 package parser
 
 import (
+	"fmt"
 	"github.com/sean-d/sloth/ast"
 	"github.com/sean-d/sloth/lexer"
 	"github.com/sean-d/sloth/token"
 )
 
 /*
-Parser has three fields: lexer, currentToken and peekToken.
+Parser has the following fields: lexer, errors, currentToken and peekToken.
 -lexer is a pointer to an instance of the lexer, on which we repeatedly call NextToken() to get the next token in the input.
+-errors holds a slice of strings containing any errors the parsing encounters
 -currentToken and peekToken act exactly like the two “pointers” our lexer has: position and readPosition.
 
 Instead of pointing to a character in the input, they point to the current and the next token.
@@ -20,15 +22,17 @@ Think of a single line only containing 5;. Then currentToken is a token.INT and 
 we are at the end of the line or if we are at just the start of an arithmetic expression.
 */
 type Parser struct {
-	lexer *lexer.Lexer
-
+	lexer        *lexer.Lexer
+	errors       []string
 	currentToken token.Token
 	peekToken    token.Token
 }
 
+// New returns a pointer to a Parser
 func New(l *lexer.Lexer) *Parser {
 	parse := &Parser{
-		lexer: l,
+		lexer:  l,
+		errors: []string{},
 	}
 
 	// Read two tokens to set both currentToken and peekToken
@@ -77,4 +81,80 @@ func (p *Parser) parseStatement() ast.Statement {
 	}
 }
 
-// TODO start at bottom of page 40 with parseLetStatement()
+/*
+parseLetStatement constructs an *ast.LetStatement node with the token it’s currently sitting on (a token.LET token) and
+then advances the tokens while making assertions about the next token with calls to expectPeek.
+
+First it expects a token.IDENT token, which it then uses to construct an *ast.Identifier node. Then it expects an
+equal sign, and finally it jumps over the expression following the equal sign until it encounters a semicolon.
+
+The skipping of expressions will be replaced, of course, as soon as we know how to parse them.
+*/
+func (p *Parser) parseLetStatement() *ast.LetStatement {
+	stmt := &ast.LetStatement{
+		Token: p.currentToken,
+	}
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	stmt.Name = &ast.Identifier{
+		Token: p.currentToken,
+		Value: p.currentToken.Literal,
+	}
+
+	if !p.expectPeek(token.ASSIGN) {
+		return nil
+	}
+
+	// TODO: expressions are being skipped until a semicolon is encountered
+	// also update the above function doc string
+
+	for !p.currentTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+
+}
+
+// currentTokenIs returns the bool repr of asserting if the current token is of an assumed type
+func (p *Parser) currentTokenIs(t token.TokenType) bool {
+	return p.currentToken.Type == t
+}
+
+// peekTokenIs returns the bool repr of asserting if the next token is of an assumed type
+func (p *Parser) peekTokenIs(t token.TokenType) bool {
+	return p.peekToken.Type == t
+}
+
+/*
+expectPeek method is one of the “assertion functions” nearly all parsers share. Their primary purpose is to enforce
+the correctness of the order of tokens by checking the type of the next token.
+
+Our expectPeek here checks the type of the peekToken and only if the type is correct does it advance the tokens by
+calling nextToken.
+*/
+
+func (p *Parser) expectPeek(t token.TokenType) bool {
+	if p.peekTokenIs(t) {
+		p.nextToken()
+		return true
+	} else {
+		p.peekError(t)
+		return false
+	}
+}
+
+// Errors returns a slice of strings containing all parser errors
+func (p *Parser) Errors() []string {
+	return p.errors
+}
+
+// peekError adds an error to p.errors when the type of peekToken does not match the expectation.
+func (p *Parser) peekError(tok token.TokenType) {
+	message := fmt.Sprintf("expected next token to be %s, got %s instead", tok, p.peekToken.Type)
+
+	p.errors = append(p.errors, message)
+}
