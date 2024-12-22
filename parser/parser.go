@@ -76,6 +76,8 @@ func (p *Parser) parseStatement() ast.Statement {
 	switch p.currentToken.Type {
 	case token.LET:
 		return p.parseLetStatement()
+	case token.RETURN:
+		return p.parseReturnStatement()
 	default:
 		return nil
 	}
@@ -117,6 +119,20 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 
 	return stmt
 
+}
+
+// parseReturnStatement constructs an ast.ReturnStatement, with the current token it’s sitting on as Token.
+// It then brings the parser in place for the expression that comes next by calling nextToken() and finally,
+// there’s the cop-out. It skips over every expression until it encounters a semicolon. That’s it.
+func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
+	statement := &ast.ReturnStatement{Token: p.currentToken}
+	p.nextToken()
+	// TODO: We're skipping the expressions until we encounter a semicolon
+	for !p.currentTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return statement
 }
 
 // currentTokenIs returns the bool repr of asserting if the current token is of an assumed type
