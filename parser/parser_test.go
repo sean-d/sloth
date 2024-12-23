@@ -92,6 +92,44 @@ func TestReturnStatements(t *testing.T) {
 	}
 }
 
+/*
+TestIdentifierExpression parses our input foobar;, checks the parser for errors, makes an assertion about the number
+of statements in the *ast.Program node and then checks that the only statement in program.Statements is an *ast.ExpressionStatement.
+Then we check that the *ast.ExpressionStatement.Expression is an *ast.Identifier.
+Finally we check that our identifier has the correct value of "foobar".
+*/
+func TestIdentifierExpression(t *testing.T) {
+	input := "foobar;"
+
+	lex := lexer.New(input)
+	parse := New(lex)
+
+	program := parse.ParseProgram()
+	checkParserErrors(t, parse)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program lacks enough statements: got %d", len(program.Statements))
+	}
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+
+	if !ok {
+		t.Fatalf("program.Statement[0] is not ast.ExpressionStatement. got %d", program.Statements[0])
+	}
+
+	ident, ok := statement.Expression.(*ast.Identifier)
+	if !ok {
+		t.Fatalf("exp not *ast.Identifier. got=%T", statement.Expression)
+	}
+	if ident.Value != "foobar" {
+		t.Errorf("ident.Value not %s. got=%s", "foobar", ident.Value)
+	}
+	if ident.TokenLiteral() != "foobar" {
+		t.Errorf("ident.TokenLiteral not %s. got=%s", "foobar",
+			ident.TokenLiteral())
+	}
+}
+
 // checkParserErrors checks the parser for errors and if it has any it prints them as test errors and stops the execution of the current test.
 func checkParserErrors(t *testing.T, parse *Parser) {
 	errors := parse.Errors()

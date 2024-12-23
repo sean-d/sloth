@@ -7,11 +7,46 @@ import (
 	"github.com/sean-d/sloth/token"
 )
 
+// Setting the PEMDAS order of operations for later consideration.
+const (
+	_ int = iota
+	LOWEST
+	EQUALS      // ==
+	LESSGREATER // < or >
+	SUM         // +
+	PRODUCT     // *
+	PREFIX      // -X or !X
+	CALL        // someFunction(X)
+)
+
 /*
-Parser has the following fields: lexer, errors, currentToken and peekToken.
+Pratt Parser
+
+A Pratt parser’s main idea is the association of parsing functions (which Pratt calls “semantic code”) with token types.
+Whenever this token type is encountered, the parsing functions are called to parse the appropriate expression and
+return an AST node that represents it.
+Each token type can have up to two parsing functions associated with it, depending on whether the token is found in a prefix or an infix position.
+*/
+
+/*
+Both of the following function types return an ast.Expression, since that’s what we’re here to parse.
+Only the infixParseFn takes an argument: another ast.Expression. This argument is “left side” of the infix operator that’s being parsed.
+A prefix operator doesn’t have a “left side”, per definition.
+
+prefixParseFns gets called when we encounter the associated token type in prefix position and infixParseFn gets called
+when we encounter the token type in infix position.
+*/
+type (
+	prefixParseFn func() ast.Expression
+	infixParseFn  func(expression ast.Expression) ast.Expression
+)
+
+/*
+Parser has the following fields:
 -lexer is a pointer to an instance of the lexer, on which we repeatedly call NextToken() to get the next token in the input.
 -errors holds a slice of strings containing any errors the parsing encounters
 -currentToken and peekToken act exactly like the two “pointers” our lexer has: position and readPosition.
+-prefixParseFns and infixParseFns maps ensure the correct prefixParseFn or infixParseFn for the current token type
 
 Instead of pointing to a character in the input, they point to the current and the next token.
 
@@ -26,6 +61,9 @@ type Parser struct {
 	errors       []string
 	currentToken token.Token
 	peekToken    token.Token
+
+	prefixParseFns map[token.TokenType]prefixParseFn
+	infixParseFns  map[token.TokenType]infixParseFn
 }
 
 // New returns a pointer to a Parser
@@ -34,6 +72,11 @@ func New(l *lexer.Lexer) *Parser {
 		lexer:  l,
 		errors: []string{},
 	}
+
+	// initialize the prefixParseFns map on Parser and register parsing functions:
+	// EX: if we encounter a token of type token.IDENT the parsing function to call is parseIdentifier, a method we defined on *Parser.
+	parse.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	parse.registerPrefix(token.IDENT, parse.parseIdentifier)
 
 	// Read two tokens to set both currentToken and peekToken
 	parse.nextToken()
@@ -60,18 +103,17 @@ func (p *Parser) ParseProgram() *ast.Program {
 	program.Statements = []ast.Statement{}
 
 	for p.currentToken.Type != token.EOF {
-		stmt := p.parseStatement()
+		statement := p.parseStatement()
 
-		if stmt != nil {
-			program.Statements = append(program.Statements, stmt)
+		if statement != nil {
+			program.Statements = append(program.Statements, statement)
 		}
 		p.nextToken()
 	}
 	return program
 }
 
-// parseStatement checks the Type of the current token. If the currentToken is a "let", parseLetStatement is called.
-// Nil is returned otherwise.
+// parseStatement checks the Type of the current token.
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.currentToken.Type {
 	case token.LET:
@@ -79,7 +121,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
@@ -163,6 +205,19 @@ func (p *Parser) expectPeek(t token.TokenType) bool {
 	}
 }
 
+/*
+prefixParseFns gets called when we encounter the associated token type in prefix position and
+infixParseFn gets called when we encounter the token type in infix position.
+*/
+
+func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[tokenType] = fn
+}
+
+func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
+	p.infixParseFns[tokenType] = fn
+}
+
 // Errors returns a slice of strings containing all parser errors
 func (p *Parser) Errors() []string {
 	return p.errors
@@ -173,4 +228,54 @@ func (p *Parser) peekError(tok token.TokenType) {
 	message := fmt.Sprintf("expected next token to be %s, got %s instead", tok, p.peekToken.Type)
 
 	p.errors = append(p.errors, message)
+}
+
+/*
+parseExpressionStatement builds an AST node and then attempts to fill its field by calling other parsing functions.
+In this case there are a few differences though: we call parseExpression() with the constant LOWEST, and then we check
+for an optional semicolon. Yes, it’s optional. If the peekToken is a token.SEMICOLON, we advance so it’s the curToken.
+If it’s not there, that’s okay too, we don’t add an error to the parser if it’s not there.
+Expression statements have optional semicolons (which makes it easier to type something like 5 + 5 into the REPL later on).
+*/
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	statement := &ast.ExpressionStatement{
+		Token:      p.currentToken,
+		Expression: nil,
+	}
+
+	statement.Expression = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return statement
+}
+
+// parseExpression checks if a parsing function is associated with p.CurrentToken.Type in the prefix position.
+// if true, the parsing function is called. if false, nil is returned.
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.currentToken.Type]
+
+	if prefix == nil {
+		return nil
+	}
+
+	leftExp := prefix()
+
+	return leftExp
+}
+
+/*
+parseIdentifier returns a *ast.Identifier with the current token in the Token field and the literal value of the token in Value.
+
+Note: It doesn’t advance the tokens, it doesn’t call nextToken; we simply start with curToken being the type of token
+you’re associated with and return with curToken being the last token that’s part of your expression type.
+Never advance the tokens too far.
+*/
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{
+		Token: p.currentToken,
+		Value: p.currentToken.Literal,
+	}
 }
