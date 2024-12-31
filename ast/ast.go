@@ -50,6 +50,23 @@ type ExpressionStatement struct {
 	Expression Expression
 }
 
+// IntegerLiteral fulfills the ast.Expression interface, just like *ast.Identifier does, but there’s a notable difference
+// to ast.Identifier in the structure itself: Value is an int64 and not a string. This is the field that’s going to
+// contain the actual value the integer literal represents in the source code. When we build an *ast.IntegerLiteral
+// we have to convert the string in *ast.IntegerLiteral.Token.Literal (which is something like "5") to an int64.
+type IntegerLiteral struct {
+	Token token.Token
+	Value int64
+}
+
+// PrefixExpression node has two noteworthy fields: Operator and Right. Operator is a string that’s going to contain
+// either "-" or "!". The Right field contains the expression to the right of the operator.
+type PrefixExpression struct {
+	Token    token.Token // The prefix token, e.g. !
+	Operator string
+	Right    Expression
+}
+
 type Program struct {
 	Statements []Statement
 }
@@ -140,6 +157,19 @@ func (es *ExpressionStatement) String() string {
 
 func (i *Identifier) String() string { return i.Value }
 
+// Deliberately add parentheses around the operator and its operand, the expression in Right.
+// That allows us to see which operands belong to which operator.
+func (pe *PrefixExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(pe.Operator)
+	out.WriteString(pe.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+
 /*
 End String() business
 */
@@ -170,3 +200,13 @@ func (rs *ReturnStatement) TokenLiteral() string { return rs.Token.Literal }
 func (es *ExpressionStatement) statementNode() {}
 
 func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Literal }
+
+func (il *IntegerLiteral) expressionNode() {}
+
+func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
+
+func (il *IntegerLiteral) String() string { return il.Token.Literal }
+
+func (pe *PrefixExpression) expressionNode() {}
+
+func (pe *PrefixExpression) TokenLiteral() string { return pe.Token.Literal }

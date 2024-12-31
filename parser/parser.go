@@ -5,6 +5,7 @@ import (
 	"github.com/sean-d/sloth/ast"
 	"github.com/sean-d/sloth/lexer"
 	"github.com/sean-d/sloth/token"
+	"strconv"
 )
 
 // Setting the PEMDAS order of operations for later consideration.
@@ -77,6 +78,9 @@ func New(l *lexer.Lexer) *Parser {
 	// EX: if we encounter a token of type token.IDENT the parsing function to call is parseIdentifier, a method we defined on *Parser.
 	parse.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	parse.registerPrefix(token.IDENT, parse.parseIdentifier)
+	parse.registerPrefix(token.INT, parse.parseIntegerLiteral)
+	parse.registerPrefix(token.BANG, parse.parsePrefixExpression)
+	parse.registerPrefix(token.MINUS, parse.parsePrefixExpression)
 
 	// Read two tokens to set both currentToken and peekToken
 	parse.nextToken()
@@ -258,6 +262,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParseFns[p.currentToken.Type]
 
 	if prefix == nil {
+		p.noPrefixParseFnError(p.currentToken.Type)
 		return nil
 	}
 
@@ -278,4 +283,57 @@ func (p *Parser) parseIdentifier() ast.Expression {
 		Token: p.currentToken,
 		Value: p.currentToken.Literal,
 	}
+}
+
+// parseIntegerLiteral makes a call to strconv.ParseInt, which converts the string in p.curToken.Literal into an int64.
+// The int64 then gets saved to the Value field, and we return the newly constructed *ast.IntegerLiteral node.
+// If that doesn’t work, we add a new error to the parser’s errors field.
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	lit := &ast.IntegerLiteral{Token: p.currentToken}
+
+	value, err := strconv.ParseInt(p.currentToken.Literal, 0, 64)
+	if err != nil {
+		msg := fmt.Sprintf("could not parse %q as integer", p.currentToken.Literal)
+		p.errors = append(p.errors, msg)
+		return nil
+	}
+
+	lit.Value = value
+
+	return lit
+}
+
+// noPrefixParseFnError just adds a formatted error message to our parser’s errors field.
+func (p *Parser) noPrefixParseFnError(t token.TokenType) {
+	msg := fmt.Sprintf("no prefix parse function for %s found", t)
+	p.errors = append(p.errors, msg)
+}
+
+/*
+	parsePrefixExpression builds an AST node, in this case *ast.PrefixExpression, just like the parsing functions we saw before.
+
+But then it does something different: it actually advances our tokens by calling p.nextToken().
+
+When parsePrefixExpression is called, p.currentToken is either of type token.BANG or token.MINUS, because otherwise it
+wouldn’t have been called. But in order to correctly parse a prefix expression like -5 more than one token has to be “consumed”.
+So after using p.currentToken to build a *ast.PrefixExpression node, the method advances the tokens and calls parseExpression again.
+This time with the precedence of prefix operators as argument.
+
+Now, when parseExpression is called by parsePrefixExpression the tokens have been advanced and the current token is the
+one after the prefix operator. In the case of -5, when parseExpression is called the p.currentToken.Type is token.INT.
+parseExpression then checks the registered prefix parsing functions and finds parseIntegerLiteral, which builds
+an *ast.IntegerLiteral node and returns it. parseExpression returns this newly constructed node and parsePrefixExpression
+uses it to fill the Right field of *ast.PrefixExpression.
+*/
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	expression := &ast.PrefixExpression{
+		Token:    p.currentToken,
+		Operator: p.currentToken.Literal,
+	}
+
+	p.nextToken()
+
+	expression.Right = p.parseExpression(PREFIX)
+
+	return expression
 }
