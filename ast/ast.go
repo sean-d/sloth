@@ -67,6 +67,29 @@ type PrefixExpression struct {
 	Right    Expression
 }
 
+// InfixExpression fulfills the ast.Expression and ast.Node interfaces, by defining the expressionNode(), TokenLiteral() and String() methods.
+// The only difference to ast.PrefixExpression is the new field called Left, which can hold any expression.
+type InfixExpression struct {
+	Token    token.Token // The operator token, e.g. +
+	Left     Expression
+	Operator string
+	Right    Expression
+}
+
+func (ie *InfixExpression) expressionNode()      {}
+func (ie *InfixExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *InfixExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(ie.Left.String())
+	out.WriteString(" " + ie.Operator + " ")
+	out.WriteString(ie.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+
 type Program struct {
 	Statements []Statement
 }
