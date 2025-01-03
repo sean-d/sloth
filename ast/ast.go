@@ -76,6 +76,13 @@ type InfixExpression struct {
 	Right    Expression
 }
 
+// Boolean: The Value field can hold values of the type bool, which means that we’re going to save
+// either true or false in there (the Go bool values, not the Sloth literals).
+type Boolean struct {
+	Token token.Token
+	Value bool
+}
+
 func (ie *InfixExpression) expressionNode()      {}
 func (ie *InfixExpression) TokenLiteral() string { return ie.Token.Literal }
 func (ie *InfixExpression) String() string {
@@ -233,3 +240,9 @@ func (il *IntegerLiteral) String() string { return il.Token.Literal }
 func (pe *PrefixExpression) expressionNode() {}
 
 func (pe *PrefixExpression) TokenLiteral() string { return pe.Token.Literal }
+
+func (b *Boolean) expressionNode() {}
+
+func (b *Boolean) TokenLiteral() string { return b.Token.Literal }
+
+func (b *Boolean) String() string { return b.Token.Literal }

@@ -105,6 +105,8 @@ func New(l *lexer.Lexer) *Parser {
 	parse.registerInfix(token.NOT_EQ, parse.parseInfixExpression)
 	parse.registerInfix(token.LT, parse.parseInfixExpression)
 	parse.registerInfix(token.GT, parse.parseInfixExpression)
+	parse.registerPrefix(token.TRUE, parse.parseBoolean)
+	parse.registerPrefix(token.FALSE, parse.parseBoolean)
 
 	// Read two tokens to set both curToken and peekToken
 	parse.nextToken()
@@ -408,4 +410,9 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	expression.Right = p.parseExpression(precedence)
 
 	return expression
+}
+
+// parseBoolean ...get this...parses booleans
+func (p *Parser) parseBoolean() ast.Expression {
+	return &ast.Boolean{Token: p.curToken, Value: p.curTokenIs(token.TRUE)}
 }
