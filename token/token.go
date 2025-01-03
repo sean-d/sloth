@@ -16,10 +16,6 @@ const (
 	ILLEGAL = "ILLEGAL"
 	EOF     = "EOF"
 
-	//comparison
-	EQ     = "=="
-	NOT_EQ = "!="
-
 	//identifiers + literals
 	IDENT = "IDENT" //add, someName, x, y...
 	INT   = "INT"   // 0123456789
@@ -33,6 +29,8 @@ const (
 	SLASH    = "/"
 	LT       = "<"
 	GT       = ">"
+	EQ       = "=="
+	NOT_EQ   = "!="
 
 	//delimeters
 	COMMA     = ","
