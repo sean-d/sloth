@@ -38,11 +38,13 @@ const (
 	SEMICOLON = ";"
 
 	//groupings
-	QUOTES = "\""
-	LPAREN = "("
-	RPAREN = ")"
-	LBRACE = "{"
-	RBRACE = "}"
+	QUOTES   = "\""
+	LPAREN   = "("
+	RPAREN   = ")"
+	LBRACE   = "{"
+	RBRACE   = "}"
+	LBRACKET = "["
+	RBRACKET = "]"
 
 	//keywords
 	FUNCTION = "FUNCTION"
