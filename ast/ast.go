@@ -220,6 +220,16 @@ func (il *IntegerLiteral) String() string       { return il.Token.Literal }
 func (il *IntegerLiteral) expressionNode()      {}
 func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
 
+// StringLiteral fulfills the ast.Expression interface, just like *ast.Identifier does
+type StringLiteral struct {
+	Token token.Token
+	Value string
+}
+
+func (sl *StringLiteral) expressionNode()      {}
+func (sl *StringLiteral) TokenLiteral() string { return sl.Token.Literal }
+func (sl *StringLiteral) String() string       { return sl.Token.Literal }
+
 // PrefixExpression stuff
 // PrefixExpression node has two noteworthy fields: Operator and Right. Operator is a string that’s going to contain
 // either "-" or "!". The Right field contains the expression to the right of the operator.
