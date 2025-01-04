@@ -23,6 +23,7 @@ const (
 	STRING_OBJ       = "STRING"
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
 	FUNCTION_OBJ     = "FUNCTION"
+	ARRAY_OBJ        = "ARRAY"
 )
 
 type Object interface {
@@ -112,3 +113,31 @@ type Builtin struct {
 
 func (b *Builtin) Type() ObjectType { return BUILTIN_OBJ }
 func (b *Builtin) Inspect() string  { return "builtin function" }
+
+/*
+Array
+
+Evaluating array literals is not hard. Mapping arrays to Go’s slices makes this easier than doing it by hand.
+We don’t have to implement a new data structure. We only need to define a new object.Array type, since that’s what the
+evaluation of array literals produces. And the definition of object.Array is simple, since arrays in Monkey are simple:
+they are just a list of objects.
+*/
+type Array struct {
+	Elements []Object
+}
+
+func (ao *Array) Type() ObjectType { return ARRAY_OBJ }
+func (ao *Array) Inspect() string {
+	var out bytes.Buffer
+
+	elements := []string{}
+	for _, e := range ao.Elements {
+		elements = append(elements, e.Inspect())
+	}
+
+	out.WriteString("[")
+	out.WriteString(strings.Join(elements, ", "))
+	out.WriteString("]")
+
+	return out.String()
+}
