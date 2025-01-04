@@ -382,5 +382,35 @@ func (ce *CallExpression) String() string {
 	return out.String()
 }
 
+/*
+IndexExpression
+
+It’s important to note that both Left and Index are just Expressions. Left is the object that’s being accessed and we’ve
+seen that it can be of any type: an identifier, an array literal, a function call. The same goes for Index. It can be
+any expression. Syntactically it doesn’t make a difference which one it is, but semantically it has to produce an integer.
+
+The fact that both Left and Index are expressions makes the parsing process easier, because we can use our parseExpression
+method to parse them.
+*/
+type IndexExpression struct {
+	Token token.Token // The [ token
+	Left  Expression
+	Index Expression
+}
+
+func (ie *IndexExpression) expressionNode()      {}
+func (ie *IndexExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *IndexExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(ie.Left.String())
+	out.WriteString("[")
+	out.WriteString(ie.Index.String())
+	out.WriteString("])")
+
+	return out.String()
+}
+
 func (ce *CallExpression) expressionNode()      {}
 func (ce *CallExpression) TokenLiteral() string { return ce.Token.Literal }
