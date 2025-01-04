@@ -50,7 +50,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	// Expressions
 	case *ast.StringLiteral:
 		return &object.String{Value: node.Value}
-		
+
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
 
@@ -182,6 +182,8 @@ func evalInfixExpression(operator string, left, right object.Object) object.Obje
 	case left.Type() != right.Type():
 		return newError("type mismatch: %s %s %s",
 			left.Type(), operator, right.Type())
+	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
+		return evalStringInfixExpression(operator, left, right)
 	default:
 		return newError("unknown operator: %s %s %s",
 			left.Type(), operator, right.Type())
@@ -324,6 +326,26 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 	extendedEnv := extendFunctionEnv(function, args)
 	evaluated := Eval(function.Body, extendedEnv)
 	return unwrapReturnValue(evaluated)
+}
+
+/*
+evalStringInfixExpression
+
+The first thing here is the check for the correct operator. If it’s the supported + we unwrap the string objects and
+construct a new string that’s a concatenation of both operands.
+
+If we want to support more operators for strings this is the place where to add them. Also, if we want to support
+comparison of strings with the == and != we’d need to add this here too.
+*/
+func evalStringInfixExpression(operator string, left, right object.Object) object.Object {
+	if operator != "+" {
+		return newError("unknown operator: %s %s %s",
+			left.Type(), operator, right.Type())
+	}
+
+	leftVal := left.(*object.String).Value
+	rightVal := right.(*object.String).Value
+	return &object.String{Value: leftVal + rightVal}
 }
 
 // extendFunctionEnv creates a new *object.Environment that’s enclosed by the function’s environment.
