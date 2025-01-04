@@ -36,6 +36,7 @@ const (
 	//delimeters
 	COMMA     = ","
 	SEMICOLON = ";"
+	COLON     = ":"
 
 	//groupings
 	QUOTES   = "\""
