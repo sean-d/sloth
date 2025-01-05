@@ -108,6 +108,9 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 		return &object.Array{Elements: elements}
 
+	case *ast.HashLiteral:
+		return evalHashLiteral(node, env)
+
 	case *ast.IndexExpression:
 		left := Eval(node.Left, env)
 		if isError(left) {
@@ -400,6 +403,46 @@ func evalArrayIndexExpression(array, index object.Object) object.Object {
 	}
 
 	return arrayObject.Elements[idx]
+}
+
+/*
+evalHashLiteral
+
+When iterating over the node.Pairs the keyNode is the first to be evaluated. Besides checking if the call to Eval
+produced an error we also make a type assertion about the evaluation result: it needs to implement the
+object.Hashable interface, otherwise it’s unusable as a hash key. That’s exactly why we added the Hashable definition.
+
+Then we call Eval again, to evaluate valueNode. If that call to Eval also doesn’t produce an error, we can add the
+newly produced key-value pair to our pairs map. We do this by generating a HashKey for the aptly-named hashKey object
+with a call to HashKey(). Then we initialize a new HashPair, pointing to both key and value and add it to pairs.
+*/
+func evalHashLiteral(
+	node *ast.HashLiteral,
+	env *object.Environment,
+) object.Object {
+	pairs := make(map[object.HashKey]object.HashPair)
+
+	for keyNode, valueNode := range node.Pairs {
+		key := Eval(keyNode, env)
+		if isError(key) {
+			return key
+		}
+
+		hashKey, ok := key.(object.Hashable)
+		if !ok {
+			return newError("unusable as hash key: %s", key.Type())
+		}
+
+		value := Eval(valueNode, env)
+		if isError(value) {
+			return value
+		}
+
+		hashed := hashKey.HashKey()
+		pairs[hashed] = object.HashPair{Key: key, Value: value}
+	}
+
+	return &object.Hash{Pairs: pairs}
 }
 
 // extendFunctionEnv creates a new *object.Environment that’s enclosed by the function’s environment.

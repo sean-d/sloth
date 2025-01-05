@@ -492,3 +492,56 @@ func TestArrayIndexExpressions(t *testing.T) {
 		}
 	}
 }
+
+/*
+TestHashLiterals
+
+This test function shows what we want from Eval when it encounters a *ast.HashLiteral: a fresh *object.Hash with the
+correct number of HashPairs mapped to the matching HashKeys in its Pairs attribute.
+
+And it also shows another requirement we have: strings, identifiers, infix operator expressions, booleans and integers -
+they should all be usable as keys. Any expression really. As long as it produces an object that implements the
+Hashable interface it should usable as a hash key.
+
+Then there are the values. They can be produced by any expression, too. We test for this here
+by asserting that 10 - 9 evaluates to 1, 6 / 2 to 3 and so on.
+*/
+func TestHashLiterals(t *testing.T) {
+	input := `let two = "two";
+    {
+        "one": 10 - 9,
+        two: 1 + 1,
+        "thr" + "ee": 6 / 2,
+        4: 4,
+        true: 5,
+        false: 6
+    }`
+
+	evaluated := testEval(input)
+	result, ok := evaluated.(*object.Hash)
+	if !ok {
+		t.Fatalf("Eval didn't return Hash. got=%T (%+v)", evaluated, evaluated)
+	}
+
+	expected := map[object.HashKey]int64{
+		(&object.String{Value: "one"}).HashKey():   1,
+		(&object.String{Value: "two"}).HashKey():   2,
+		(&object.String{Value: "three"}).HashKey(): 3,
+		(&object.Integer{Value: 4}).HashKey():      4,
+		TRUE.HashKey():                             5,
+		FALSE.HashKey():                            6,
+	}
+
+	if len(result.Pairs) != len(expected) {
+		t.Fatalf("Hash has wrong num of pairs. got=%d", len(result.Pairs))
+	}
+
+	for expectedKey, expectedValue := range expected {
+		pair, ok := result.Pairs[expectedKey]
+		if !ok {
+			t.Errorf("no pair for given key in Pairs")
+		}
+
+		testIntegerObject(t, pair.Value, expectedValue)
+	}
+}
