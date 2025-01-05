@@ -351,13 +351,6 @@ push([0, 1], 2);
 ```
 
 
----
-
-Enjoy Monkey :monkey_face: !
-
----
-
-
 ## License
 
 [MIT © sean-d](./LICENSE)
