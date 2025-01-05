@@ -1,6 +1,9 @@
 package evaluator
 
-import "github.com/sean-d/sloth/object"
+import (
+	"fmt"
+	"github.com/sean-d/sloth/object"
+)
 
 /*
 The most important part of this function is the call to Go’s len and the returning of a newly allocated object.Integer.
@@ -106,6 +109,15 @@ var builtins = map[string]*object.Builtin{
 			newElements[length] = args[1]
 
 			return &object.Array{Elements: newElements}
+		},
+	},
+	"puts": &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			for _, arg := range args {
+				fmt.Println(arg.Inspect())
+			}
+
+			return NULL
 		},
 	},
 }
