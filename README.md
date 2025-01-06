@@ -65,7 +65,7 @@ The functionality is minimal as this was an exercise in learning how programming
 
 ### Syntax overview
 
-An example of Fibonacci function.
+An example of fib.
 
 ```
 let fibonacci = fn(x) {
@@ -85,7 +85,7 @@ fibonacci(10);
 
 #### If
 
-It supports the general `if`. `else` exists, but` else if` does not exist.
+It supports `if`. `else`, but not ` else if`.
 
 ```
 if (true) {
@@ -97,8 +97,6 @@ if (true) {
 
 #### Operators
 
-It supports the general operations.
-
 ```
 1 + 2 + (3 * 4) - (10 / 5);
 !true;
@@ -109,8 +107,6 @@ It supports the general operations.
 ```
 
 #### Return
-
-It returns the value immediately. No further processing will be executed.
 
 ```
 if (true) {
@@ -127,8 +123,6 @@ identity("Monkey");
 ```
 
 ### Variable bindings
-
-Variable bindings, such as those supported by many programming languages, are implemented. Variables can be defined using the `let` keyword.
 
 **Format:**
 
@@ -148,11 +142,9 @@ let identity = fn(x) { x };
 
 ### Literals
 
-Five types of literals are implemented.
-
 #### Integer
 
-`Integer` represents an integer value. Floating point numbers can not be handled.
+`Integer` represents an integer value. where are floats? indeed, where are they.
 
 **Format:**
 
@@ -301,7 +293,7 @@ You can use 6 built-in functions :rocket:
 
 #### `puts(<arg1>, <arg2>, ...): void`
 
-It outputs the specified value to `stdout`. In the case of Playground, it is output to `console`.
+It outputs the specified value to `stdout`.
 
 ```
 puts("Hello");
