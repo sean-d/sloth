@@ -7,10 +7,9 @@
 
 
 `sloth` is a programming language designed to learn interpreters.  
-It's came from [Writing An Interpreter In Go][writing-an-interpreter-in-go].
 
 
-## Try Monkey!
+## Try sloth!
 
 ### with REPL
 
