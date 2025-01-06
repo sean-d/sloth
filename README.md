@@ -119,7 +119,7 @@ let identity = fn(x) {
   return x;
 };
 
-identity("Monkey");
+identity("sloth");
 ```
 
 ### Variable bindings
